@@ -1,71 +1,325 @@
-# CROPCARE AI
+# CROPCARE AI DEVELOPMENT INSTRUCTIONS
 
-- Make and excute the changes step by step do not skip any step.
+## General Instructions
 
-- You write simple, clean and maintable code. You prioritize clarity over unnecessary abstraction because this app is used for medicine suggestion for farmer in India.
+* Work step by step. Do not skip any task.
+* Before implementing a feature, inspect the existing codebase to determine whether it already exists.
+* Reuse existing code whenever possible instead of rewriting working components.
+* Keep the code simple, clean, readable, maintainable, and production-ready.
+* Do not modify existing working functionality unless required.
+* If a required dependency is missing, install and configure it.
+* After each completed feature, verify the relevant functionality by running the application or available tests. If verification cannot be performed, clearly state what remains unverified.
+* Maintain consistent coding standards throughout the project.
+
 ---
 
-# FRONTEND DEVELOPMENT
+# FRONTEND DEVELOPMENT (React.js)
 
-- I need a simple chatbot UI/UX with six pages.
+Create a modern, responsive, and farmer-friendly **React.js web application**.
 
-- First page generate a image that is similar image the first page when open the mobile it will show for 3 to 4 seconds and automatically moves to the next page.
+Use:
 
-- Second page is selecting language section give the list of languages Tamil, English, Marathi, Telugu, Hindi, Malayalam the user after selecting one language it moves to the next page.
+* React.js
+* React Router
+* Axios
+* Tailwind CSS
+* Framer Motion (for animations)
+* React Icons
 
-- Third Page is selecting whether the user is Farmer or Agriculture Expert the user need to select only one section.
+The application should contain six pages.
 
-- Fourth page is login page the both Farmer and Agriculture Expert have same login page UI but the data storing database is only different it has
-    1. mobile number enter section
-    after giving the mobile number it will login with the OTP so make the functionalities that generate OTP and login with OTP
-give all the requirements with a neat UI.
+## 1. Splash Screen
 
-- Fifth page is chating with AI page make it looks like more simple that user can easily understand how to use it.
+* Display CropCare AI branding.
+* Use an agriculture-themed illustration.
+* Show for 3–4 seconds.
+* Automatically navigate to the Language Selection page.
+* Include smooth fade and scale animations.
 
-- sixth is farmer communicating to Agriculture Expert page it also wants to look more simple UI.
+---
 
-- make the UI more simple even a first time smartphone user can easily navigate and use it and also I want the animations and tranisitions more attractive.
+## 2. Language Selection
 
-- finally check all the functionalities every UI/UX is working correctly then go to the next step.
+Supported languages:
+
+* English
+* Tamil
+* Hindi
+* Telugu
+* Malayalam
+* Marathi
+
+Requirements:
+
+* Allow the user to select only one language.
+* Store the selected language.
+* Automatically navigate to the Role Selection page.
+
+---
+
+## 3. Role Selection
+
+Allow the user to choose one role:
+
+* Farmer
+* Agriculture Expert
+
+Store the selected role and navigate to the Login page.
+
+---
+
+## 4. Login Page
+
+Both Farmer and Agriculture Expert should use the same login interface.
+
+Features:
+
+* Mobile number input
+* Generate OTP
+* Verify OTP
+* Login using OTP
+
+Store Farmer and Agriculture Expert details in separate backend tables.
+
+Design the page to be clean, responsive, and easy to use for first-time users.
+
+---
+
+## 5. AI Chat Page
+
+Features:
+
+* Chat interface
+* Upload plant image
+* Drag-and-drop image upload
+* Voice recording button
+* Speech-to-text integration
+* Send message
+* Display disease prediction
+* Display confidence score
+* Display AI response
+* Display medicine recommendation
+* Display treatment steps
+* Display precautions
+
+The UI should remain simple and easy to understand.
+
+---
+
+## 6. Agriculture Expert Chat
+
+Allow communication between Farmers and Agriculture Experts.
+
+Features:
+
+* Text messaging
+* Image sharing
+* Voice recording
+* Simple conversation layout
+
+---
+
+## UI Requirements
+
+* Modern responsive design
+* Tailwind CSS
+* Material-inspired cards
+* Rounded corners
+* Soft shadows
+* Smooth page transitions
+* Framer Motion animations
+* Responsive on desktop, tablet, and mobile browsers
+* Large buttons and clear typography
+* Farmer-friendly interface
+
 ---
 
 # BACKEND DEVELOPMENT
 
-- do not change the existing code make the changes what I say.
+Do not remove or rewrite existing working functionality.
 
-- make sure that Faster-whisper is working correctly.
+Extend the backend only where required.
 
-- In the existing database create two tables the one is for Farmers and another is for Agriculture Expert in the table it want to store the user Login details.
+## Faster-Whisper
 
-- Check whether the audio is changing to text and the text is showing in the text section in chat area.
+Configure Faster-Whisper correctly.
 
-- make the Faster-whisper is supporting for all the lanugages if not make any some changes.
+Verify:
+
+* Audio upload
+* Audio transcription
+* Supported audio formats
+* Language detection
+* Returned text
+
+If GPU is available, use GPU.
+
+Otherwise use CPU.
+
 ---
 
-# IDEA
+## Database
 
-- with the idea given below create and check that all is working fine if not make all the changes.
+Create two tables:
 
-- first the farmer user login and goes to the chatarea the farmer upload a photo or ask a doubt about to improve the productivity of the crop.
+Farmer
 
-- then after later I create a RAG model later then i connect to generate the idea or giving the perfect medicine for the disease of the crop
+AgricultureExpert
 
-- make sure that the above idea I have mentioned are working well and good.
+Store:
+
+* Mobile Number
+* OTP verification status
+* Login timestamp
+* Preferred language
+* Role
+
+Do not modify existing prediction tables.
+
 ---
 
-# THINGS AFTER CREATING BACKEND AND FRONTEND
+## Prediction
 
-- connect Frontend and Backend and make that all the functionalities are working fine and good.
+Verify that:
 
-- Make sure that Faster-whisper is changing audio to text correctly.
+* Uploaded image reaches the backend.
+* CNN model loads successfully.
+* Prediction executes correctly.
+* Disease name is returned.
+* Confidence score is returned.
 
-- check this correctly when the user click the audio button in the chat area the faster-whisper activate and the user audio is change to text and the text is visible in the text area.
-
-- check the picture uploaded is correctly going to backend and going to model and give disease reply in the frontend area
-
-- in the chat first the farmer gives the photo in the chat the photo is gone to model and give the disease name in the frontend after it is gone to RAG model and give the response of what to do next to the plant and what medicine is to be given.
-
-- Make sure that the above all the functionalities are working correctly and finish the task.
 ---
 
-Make sure that all the steps are executed correctly without any skipping.
+## Speech-to-Text
+
+Verify:
+
+* Audio upload endpoint.
+* Faster-Whisper transcription.
+* Transcribed text is returned to the frontend.
+* The recognized text automatically appears inside the chat input.
+
+Support:
+
+* English
+* Tamil
+* Hindi
+* Telugu
+* Malayalam
+* Marathi
+
+If automatic language detection is insufficient, allow the frontend to specify the expected language.
+
+---
+
+# APPLICATION FLOW
+
+Farmer Login
+
+↓
+
+AI Chat Page
+
+↓
+
+Upload Plant Image
+
+↓
+
+CNN Disease Detection
+
+↓
+
+Return Disease + Confidence
+
+↓
+
+Send Disease and User Query to RAG (future integration)
+
+↓
+
+Generate Recommendation
+
+↓
+
+Display Medicine
+
+↓
+
+Display Precautions
+
+↓
+
+Display Recovery Advice
+
+---
+
+Voice Flow
+
+User clicks the microphone button
+
+↓
+
+Record Audio
+
+↓
+
+Upload Audio
+
+↓
+
+Faster-Whisper
+
+↓
+
+Speech-to-Text
+
+↓
+
+Populate Chat Input
+
+↓
+
+Send to RAG
+
+↓
+
+Display AI Response
+
+---
+
+# FRONTEND + BACKEND INTEGRATION
+
+Connect every React.js page with the corresponding FastAPI endpoint.
+
+Verify API connectivity for:
+
+* Login
+* OTP
+* Prediction
+* Speech-to-text
+* Chat
+* Prediction History
+
+Implement loading indicators, proper error handling, and responsive user feedback.
+
+---
+
+# FINAL REVIEW
+
+Review the complete application.
+
+For every feature:
+
+* Confirm whether it is implemented.
+* Confirm whether it has been verified.
+* If verification cannot be performed, explain why and provide the exact manual verification steps.
+
+Finally, generate a checklist containing:
+
+* Completed features
+* Pending features
+* Verified features
+* Unverified features
+* Known issues
+* Recommended future improvements
