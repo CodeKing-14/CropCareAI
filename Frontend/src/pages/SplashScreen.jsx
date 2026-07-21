@@ -2,7 +2,8 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { GiPlantRoots } from 'react-icons/gi';
-import heroImage from '../assets/hero.png';
+import heroImage from '../assets/hero.svg';
+import { t } from '../utils/i18n';
 import './Page.css';
 
 export default function SplashScreen() {
@@ -14,30 +15,49 @@ export default function SplashScreen() {
     }, [navigate]);
 
     return (
-        <main className="page shell">
+        <main className="page shell flex items-center justify-center">
             <motion.section
                 className="hero-card"
-                initial={{ opacity: 0, scale: 0.96 }}
+                initial={{ opacity: 0, scale: 0.92 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.7, ease: 'easeOut' }}
+                transition={{ duration: 0.8, ease: 'easeOut' }}
             >
-                <div>
-                    <p className="eyebrow icon-label"><GiPlantRoots /> CropCare AI</p>
-                    <h1>Smart crop help for farmers and experts</h1>
-                    <p className="subtitle">
-                        Identify crop diseases, transcribe voice reports, and review prediction history.
+                <motion.div
+                    initial={{ opacity: 0, y: -12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2, duration: 0.6 }}
+                >
+                    <p className="eyebrow splash-logo">
+                        <GiPlantRoots /> {t('appName')}
                     </p>
-                </div>
+                    <h1>{t('splashTitle')}</h1>
+                    <p className="subtitle">{t('splashSubtitle')}</p>
+                </motion.div>
 
-                <img className="hero-illustration" src={heroImage} alt="Healthy crop illustration" />
+                <motion.img
+                    className="hero-illustration"
+                    src={heroImage}
+                    alt="Agriculture illustration with crops and farmland"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.35, duration: 0.7 }}
+                />
 
-                <div className="actions-row">
-                    <button className="button primary" onClick={() => navigate('/language')}>
-                        Start now
+                <motion.div
+                    className="actions-row"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.6, duration: 0.5 }}
+                >
+                    <button className="button primary" type="button" onClick={() => navigate('/language')}>
+                        {t('startNow')}
                     </button>
-                    <button className="button secondary" onClick={() => navigate('/report')}>
-                        View reports
-                    </button>
+                </motion.div>
+
+                <div className="progress-dots" aria-hidden="true">
+                    <span className="progress-dot active" />
+                    <span className="progress-dot" style={{ animationDelay: '0.2s' }} />
+                    <span className="progress-dot" style={{ animationDelay: '0.4s' }} />
                 </div>
             </motion.section>
         </main>

@@ -1,9 +1,14 @@
+"""
+database.py — Database engine, models, and session management.
+
+The engine is created lazily inside init_db() so the module can be imported
+safely without touching the database at import time.
+"""
+
 import logging
 import os
 from datetime import datetime
-from getpass import getpass
 from typing import Generator
-from urllib.parse import urlparse, urlunparse
 
 import psycopg2
 from dotenv import load_dotenv
@@ -14,72 +19,36 @@ load_dotenv()
 
 logger = logging.getLogger("cropcare")
 
+# ---------------------------------------------------------------------------
+# Configuration
+# ---------------------------------------------------------------------------
 
-def _resolve_database_url() -> str:
-    database_url = os.getenv("DATABASE_URL", "").strip()
-    if not database_url:
-        raise RuntimeError("DATABASE_URL must be set to a PostgreSQL connection string")
-
-    parsed = urlparse(database_url)
-    if parsed.scheme not in {"postgresql", "postgres"}:
-        raise RuntimeError("DATABASE_URL must point to a PostgreSQL server")
-
-    if parsed.password in {None, "", "YOUR_PASSWORD", "your_password"} and not os.getenv("PYTEST_CURRENT_TEST"):
-        password = getpass("Enter your PostgreSQL password: ")
-        if not password:
-            raise RuntimeError("A PostgreSQL password is required")
-
-        netloc = parsed.hostname or "localhost"
-        if parsed.username:
-            netloc = f"{parsed.username}:{password}@{netloc}"
-        else:
-            netloc = f"postgres:{password}@{netloc}"
-        if parsed.port:
-            netloc = f"{netloc}:{parsed.port}"
-        return urlunparse(parsed._replace(netloc=netloc))
-
-    return database_url
-
-
-DATABASE_URL = _resolve_database_url()
-engine = create_engine(DATABASE_URL, pool_pre_ping=True)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-
-def _rebuild_engine() -> None:
-    global engine, SessionLocal
-    engine = create_engine(DATABASE_URL, pool_pre_ping=True)
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# These are set once during init_db() — never at import time.
+engine = None
+SessionLocal = None
 
 
-def _ensure_database_exists(database_url: str) -> None:
-    parsed = urlparse(database_url)
-    if parsed.scheme not in {"postgresql", "postgres"}:
-        return
+def _get_database_url() -> str:
+    """Read and validate DATABASE_URL from the environment."""
+    url = os.getenv("DATABASE_URL", "").strip()
+    if not url:
+        raise RuntimeError(
+            "DATABASE_URL is not set. "
+            "Add it to your .env file: DATABASE_URL=postgresql://user:password@host:5432/dbname"
+        )
+    if not (url.startswith("postgresql://") or url.startswith("postgres://")):
+        raise RuntimeError(
+            "DATABASE_URL must be a PostgreSQL connection string "
+            "(e.g. postgresql://user:password@localhost:5432/cropcare)"
+        )
+    return url
 
-    target_db = parsed.path.lstrip("/") or "postgres"
 
-    try:
-        connection_kwargs = {
-            "dbname": "postgres",
-            "user": parsed.username or "postgres",
-            "password": parsed.password,
-            "host": parsed.hostname or "localhost",
-            "port": parsed.port or 5432,
-        }
-        conn = psycopg2.connect(**connection_kwargs)
-        conn.autocommit = True
-        with conn.cursor() as cursor:
-            cursor.execute("SELECT 1 FROM pg_database WHERE datname = %s", (target_db,))
-            exists = cursor.fetchone()
-            if not exists:
-                cursor.execute(f'CREATE DATABASE "{target_db}"')
-                logger.info("Created PostgreSQL database %s", target_db)
-        conn.close()
-    except Exception as exc:
-        logger.warning("Could not ensure PostgreSQL database exists: %s", exc)
-
+# ---------------------------------------------------------------------------
+# ORM Models
+# ---------------------------------------------------------------------------
 
 class PredictionHistory(Base):
     __tablename__ = "prediction_history"
@@ -122,18 +91,52 @@ class AgricultureExpert(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
 
-def init_db() -> None:
+class ExpertMessage(Base):
+    __tablename__ = "expert_messages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    sender_role = Column(String(20), nullable=False)
+    sender_mobile = Column(String(20), nullable=False)
+    message_type = Column(String(20), default="text", nullable=False)
+    content = Column(String, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+# ---------------------------------------------------------------------------
+# Initialisation helpers
+# ---------------------------------------------------------------------------
+
+def _ensure_database_exists(database_url: str) -> None:
+    """
+    Connect to the 'postgres' maintenance database and create the target
+    database if it does not already exist.
+    """
+    from urllib.parse import urlparse
+
+    parsed = urlparse(database_url)
+    target_db = parsed.path.lstrip("/") or "postgres"
+
     try:
-        _ensure_database_exists(DATABASE_URL)
-        _rebuild_engine()
-        Base.metadata.create_all(bind=engine)
-        _ensure_auth_columns()
-        logger.info("Database initialized successfully")
+        conn = psycopg2.connect(
+            dbname="postgres",
+            user=parsed.username or "postgres",
+            password=parsed.password,
+            host=parsed.hostname or "localhost",
+            port=parsed.port or 5432,
+        )
+        conn.autocommit = True
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT 1 FROM pg_database WHERE datname = %s", (target_db,))
+            if not cursor.fetchone():
+                cursor.execute(f'CREATE DATABASE "{target_db}"')
+                logger.info("Created PostgreSQL database: %s", target_db)
+        conn.close()
     except Exception as exc:
-        logger.exception("Database initialization failed: %s", exc)
+        logger.warning("Could not verify/create database '%s': %s", target_db, exc)
 
 
 def _ensure_auth_columns() -> None:
+    """Add any missing columns that were introduced after the initial migration."""
     statements = [
         "ALTER TABLE farmers ADD COLUMN IF NOT EXISTS role VARCHAR(20) NOT NULL DEFAULT 'farmer'",
         "ALTER TABLE farmers ADD COLUMN IF NOT EXISTS preferred_language VARCHAR(40) NOT NULL DEFAULT 'English'",
@@ -142,13 +145,43 @@ def _ensure_auth_columns() -> None:
         "ALTER TABLE agriculture_experts ADD COLUMN IF NOT EXISTS preferred_language VARCHAR(40) NOT NULL DEFAULT 'English'",
         "ALTER TABLE agriculture_experts ADD COLUMN IF NOT EXISTS otp_verified BOOLEAN NOT NULL DEFAULT FALSE",
     ]
-
     with engine.begin() as connection:
         for statement in statements:
             connection.execute(text(statement))
 
 
+def init_db() -> None:
+    """
+    Initialise the database:
+      1. Validate DATABASE_URL.
+      2. Create the database if it does not exist.
+      3. Build the SQLAlchemy engine and session factory.
+      4. Create all ORM tables.
+      5. Apply any missing column migrations.
+    """
+    global engine, SessionLocal
+
+    database_url = _get_database_url()
+
+    _ensure_database_exists(database_url)
+
+    engine = create_engine(database_url, pool_pre_ping=True)
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+    Base.metadata.create_all(bind=engine)
+    _ensure_auth_columns()
+
+    logger.info("Database initialised successfully")
+
+
+# ---------------------------------------------------------------------------
+# Dependency
+# ---------------------------------------------------------------------------
+
 def get_db() -> Generator[Session, None, None]:
+    """FastAPI dependency that provides a database session per request."""
+    if SessionLocal is None:
+        raise RuntimeError("Database has not been initialised. Call init_db() first.")
     db = SessionLocal()
     try:
         yield db

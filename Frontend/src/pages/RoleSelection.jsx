@@ -3,11 +3,12 @@ import { motion } from 'framer-motion';
 import { FaUserTie } from 'react-icons/fa';
 import { GiFarmer } from 'react-icons/gi';
 import { getLanguage, setRole } from '../utils/appState';
+import { t } from '../utils/i18n';
 import './Page.css';
 
 const roleOptions = [
-    { value: 'farmer', label: 'Farmer', icon: GiFarmer },
-    { value: 'expert', label: 'Agriculture Expert', icon: FaUserTie },
+    { value: 'farmer', labelKey: 'farmer', icon: GiFarmer },
+    { value: 'expert', labelKey: 'expert', icon: FaUserTie },
 ];
 
 export default function RoleSelection() {
@@ -21,22 +22,34 @@ export default function RoleSelection() {
 
     return (
         <main className="page shell">
-            <motion.section className="card" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }}>
-                <p className="eyebrow">Selected language: {language}</p>
-                <h1>Who are you?</h1>
-                <div className="select-grid">
-                    {roleOptions.map((item) => {
+            <motion.section
+                className="card"
+                initial={{ opacity: 0, y: 24 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+            >
+                <p className="eyebrow">{t('stepTwo')} · {t('selectedLanguage')}: {language}</p>
+                <h1>{t('whoAreYou')}</h1>
+                <p className="subtitle">{t('splashSubtitle')}</p>
+
+                <div className="select-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
+                    {roleOptions.map((item, index) => {
                         const Icon = item.icon;
                         return (
-                            <button
+                            <motion.button
                                 type="button"
                                 className="button option"
                                 key={item.value}
                                 onClick={() => handleSelect(item.value)}
+                                initial={{ opacity: 0, y: 16 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: index * 0.1, duration: 0.4 }}
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
                             >
                                 <Icon className="option-icon" />
-                                {item.label}
-                            </button>
+                                {t(item.labelKey)}
+                            </motion.button>
                         );
                     })}
                 </div>

@@ -55,3 +55,21 @@ class ChatResponse(BaseModel):
     medicine_recommendation: str
     treatment_steps: list[str]
     precautions: list[str]
+    recovery_advice: str
+
+
+class ExpertMessageCreate(BaseModel):
+    sender_role: Literal["farmer", "expert"] = Field(..., description="Role of the message sender")
+    sender_mobile: str = Field(..., description="Mobile number of the sender")
+    content: str = Field(..., description="Text message content")
+
+
+class ExpertMessageItem(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    sender_role: str
+    sender_mobile: str
+    message_type: str
+    content: str
+    created_at: datetime

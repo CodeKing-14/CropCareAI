@@ -37,4 +37,8 @@ def chat(data: ChatRequest) -> ChatResponse:
             "Keep children and animals away from treated areas.",
             "Follow the waiting period before harvest.",
         ],
+        recovery_advice=(
+            "Monitor the crop daily for 7 to 10 days. Healthy new leaves and stable growth "
+            "indicate recovery. If symptoms spread, contact an agriculture expert immediately."
+        ),
     )

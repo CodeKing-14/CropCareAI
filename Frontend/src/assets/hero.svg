@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480" fill="none" role="img" aria-label="Agriculture illustration">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#e8f5e9"/>
+      <stop offset="100%" stop-color="#c8e6c9"/>
+    </linearGradient>
+    <linearGradient id="field" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#66bb6a"/>
+      <stop offset="100%" stop-color="#2e7d32"/>
+    </linearGradient>
+    <linearGradient id="sun" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fff176"/>
+      <stop offset="100%" stop-color="#ffb300"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="480" rx="32" fill="url(#sky)"/>
+  <circle cx="520" cy="90" r="52" fill="url(#sun)" opacity="0.95"/>
+  <ellipse cx="320" cy="420" rx="360" ry="80" fill="#81c784" opacity="0.35"/>
+  <path d="M0 320 Q160 260 320 300 T640 290 L640 480 L0 480 Z" fill="url(#field)"/>
+  <path d="M120 310 C140 220 180 180 200 120 C205 170 220 210 240 250 C250 200 270 160 290 110 C300 170 320 220 340 280 C360 230 390 190 420 140 C430 200 450 250 470 310 Z" fill="#388e3c"/>
+  <path d="M380 300 C400 230 430 190 450 130 C460 180 475 220 490 260 C505 210 530 170 560 120 C565 180 575 230 585 300 Z" fill="#43a047"/>
+  <g transform="translate(260 180)">
+    <ellipse cx="60" cy="150" rx="18" ry="90" fill="#5d4037"/>
+    <circle cx="60" cy="70" r="70" fill="#4caf50"/>
+    <circle cx="30" cy="55" r="42" fill="#66bb6a"/>
+    <circle cx="95" cy="60" r="38" fill="#81c784"/>
+    <circle cx="60" cy="35" r="35" fill="#a5d6a7"/>
+  </g>
+  <g transform="translate(80 260)">
+    <rect x="0" y="40" width="120" height="70" rx="8" fill="#8d6e63"/>
+    <path d="M10 40 L60 0 L110 40 Z" fill="#795548"/>
+    <rect x="45" y="70" width="30" height="40" rx="4" fill="#6d4c41"/>
+  </g>
+  <g transform="translate(480 250)">
+    <ellipse cx="30" cy="80" rx="8" ry="40" fill="#558b2f" transform="rotate(-15 30 80)"/>
+    <ellipse cx="55" cy="75" rx="8" ry="45" fill="#689f38" transform="rotate(10 55 75)"/>
+    <ellipse cx="80" cy="78" rx="8" ry="42" fill="#7cb342" transform="rotate(-8 80 78)"/>
+    <path d="M20 85 Q55 55 90 85" stroke="#33691e" stroke-width="4" fill="none"/>
+  </g>
+  <text x="32" y="56" font-family="system-ui, sans-serif" font-size="28" font-weight="700" fill="#1b5e20">CropCare AI</text>
+</svg>
