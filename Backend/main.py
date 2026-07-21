@@ -10,6 +10,7 @@ from database import init_db
 from routers.prediction import router as prediction_router
 from routers.speech import router as speech_router
 from routers.auth import router as auth_router
+from routers.chat import router as chat_router
 
 load_dotenv()
 
@@ -42,6 +43,7 @@ app.add_middleware(
 app.include_router(prediction_router)
 app.include_router(speech_router)
 app.include_router(auth_router)
+app.include_router(chat_router)
 
 
 @app.get("/", tags=["health"])

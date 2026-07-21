@@ -1,11 +1,15 @@
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { setLanguage } from '../utils/appState';
 import './Page.css';
 
 const languageOptions = [
-    { value: 'English', label: 'English' },
-    { value: 'Hindi', label: 'हिन्दी' },
-    { value: 'Kannada', label: 'ಕನ್ನಡ' },
+    'English',
+    'Tamil',
+    'Hindi',
+    'Telugu',
+    'Malayalam',
+    'Marathi',
 ];
 
 export default function LanguageSelection() {
@@ -18,22 +22,22 @@ export default function LanguageSelection() {
 
     return (
         <main className="page shell">
-            <section className="card">
+            <motion.section className="card" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }}>
                 <p className="eyebrow">Step 1 of 3</p>
                 <h1>Choose your language</h1>
                 <div className="select-grid">
-                    {languageOptions.map((item) => (
+                    {languageOptions.map((language) => (
                         <button
                             type="button"
                             className="button option"
-                            key={item.value}
-                            onClick={() => handleSelect(item.value)}
+                            key={language}
+                            onClick={() => handleSelect(language)}
                         >
-                            {item.label}
+                            {language}
                         </button>
                     ))}
                 </div>
-            </section>
+            </motion.section>
         </main>
     );
 }

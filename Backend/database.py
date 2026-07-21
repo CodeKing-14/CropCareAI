@@ -7,7 +7,7 @@ from urllib.parse import urlparse, urlunparse
 
 import psycopg2
 from dotenv import load_dotenv
-from sqlalchemy import Column, DateTime, Float, Integer, String, create_engine
+from sqlalchemy import Boolean, Column, DateTime, Float, Integer, String, create_engine, text
 from sqlalchemy.orm import Session, declarative_base, sessionmaker
 
 load_dotenv()
@@ -97,6 +97,9 @@ class Farmer(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     mobile_number = Column(String(20), unique=True, index=True, nullable=False)
+    role = Column(String(20), default="farmer", nullable=False)
+    preferred_language = Column(String(40), default="English", nullable=False)
+    otp_verified = Column(Boolean, default=False, nullable=False)
     otp_code = Column(String(16), nullable=True)
     otp_expires_at = Column(DateTime, nullable=True)
     last_login_at = Column(DateTime, nullable=True)
@@ -109,6 +112,9 @@ class AgricultureExpert(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     mobile_number = Column(String(20), unique=True, index=True, nullable=False)
+    role = Column(String(20), default="expert", nullable=False)
+    preferred_language = Column(String(40), default="English", nullable=False)
+    otp_verified = Column(Boolean, default=False, nullable=False)
     otp_code = Column(String(16), nullable=True)
     otp_expires_at = Column(DateTime, nullable=True)
     last_login_at = Column(DateTime, nullable=True)
@@ -121,9 +127,25 @@ def init_db() -> None:
         _ensure_database_exists(DATABASE_URL)
         _rebuild_engine()
         Base.metadata.create_all(bind=engine)
+        _ensure_auth_columns()
         logger.info("Database initialized successfully")
     except Exception as exc:
         logger.exception("Database initialization failed: %s", exc)
+
+
+def _ensure_auth_columns() -> None:
+    statements = [
+        "ALTER TABLE farmers ADD COLUMN IF NOT EXISTS role VARCHAR(20) NOT NULL DEFAULT 'farmer'",
+        "ALTER TABLE farmers ADD COLUMN IF NOT EXISTS preferred_language VARCHAR(40) NOT NULL DEFAULT 'English'",
+        "ALTER TABLE farmers ADD COLUMN IF NOT EXISTS otp_verified BOOLEAN NOT NULL DEFAULT FALSE",
+        "ALTER TABLE agriculture_experts ADD COLUMN IF NOT EXISTS role VARCHAR(20) NOT NULL DEFAULT 'expert'",
+        "ALTER TABLE agriculture_experts ADD COLUMN IF NOT EXISTS preferred_language VARCHAR(40) NOT NULL DEFAULT 'English'",
+        "ALTER TABLE agriculture_experts ADD COLUMN IF NOT EXISTS otp_verified BOOLEAN NOT NULL DEFAULT FALSE",
+    ]
+
+    with engine.begin() as connection:
+        for statement in statements:
+            connection.execute(text(statement))
 
 
 def get_db() -> Generator[Session, None, None]:

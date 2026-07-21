@@ -42,12 +42,17 @@ def request_otp(data: OTPRequest, db: Session = Depends(get_db)) -> AuthResponse
     if user is None:
         user = model(
             mobile_number=mobile,
+            role=data.role,
+            preferred_language=data.preferred_language,
+            otp_verified=False,
             otp_code=otp_code,
             otp_expires_at=otp_expires_at,
             last_login_at=None,
         )
         db.add(user)
     else:
+        user.preferred_language = data.preferred_language
+        user.otp_verified = False
         user.otp_code = otp_code
         user.otp_expires_at = otp_expires_at
     db.commit()
@@ -78,6 +83,7 @@ def verify_otp(data: OTPVerify, db: Session = Depends(get_db)) -> AuthResponse:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="OTP code has expired")
 
     user.last_login_at = datetime.utcnow()
+    user.otp_verified = True
     user.otp_code = None
     user.otp_expires_at = None
     db.commit()

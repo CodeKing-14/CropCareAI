@@ -9,8 +9,12 @@ const api = axios.create({
     },
 });
 
-export async function requestOtp(mobileNumber, role) {
-    const response = await api.post('/auth/request-otp', { mobile_number: mobileNumber, role });
+export async function requestOtp(mobileNumber, role, preferredLanguage) {
+    const response = await api.post('/auth/request-otp', {
+        mobile_number: mobileNumber,
+        role,
+        preferred_language: preferredLanguage,
+    });
     return response.data;
 }
 
@@ -28,11 +32,24 @@ export async function predictImage(file) {
     return response.data;
 }
 
-export async function transcribeAudio(file) {
+export async function transcribeAudio(file, language) {
     const data = new FormData();
     data.append('audio', file);
+    if (language) {
+        data.append('language', language);
+    }
     const response = await axios.post(`${BACKEND_URL}/speech/speech-to-text`, data, {
         headers: { 'Content-Type': 'multipart/form-data' },
     });
+    return response.data;
+}
+
+export async function sendChatMessage(payload) {
+    const response = await api.post('/chat', payload);
+    return response.data;
+}
+
+export async function getPredictionHistory() {
+    const response = await api.get('/history');
     return response.data;
 }

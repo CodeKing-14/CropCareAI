@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { MdPhoneAndroid, MdSms } from 'react-icons/md';
 import { getRole, getLanguage, setAuthenticated } from '../utils/appState';
 import { requestOtp, verifyOtp } from '../services/api';
 import './Page.css';
@@ -28,7 +30,7 @@ export default function LoginPage() {
         setStatus('');
 
         try {
-            await requestOtp(mobile.trim(), role);
+            await requestOtp(mobile.trim(), role, language);
             setOtpRequested(true);
             setStatus('OTP sent. Check your phone and enter the code below.');
         } catch (err) {
@@ -56,13 +58,13 @@ export default function LoginPage() {
 
     return (
         <main className="page shell">
-            <section className="card">
+            <motion.section className="card" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }}>
                 <p className="eyebrow">Login mode: {role || 'Unknown'}</p>
                 <h1>Sign in with OTP</h1>
                 <p className="subtitle">Language: {language || 'English'}</p>
 
                 <label className="field-label">
-                    Mobile number
+                    <span className="icon-label"><MdPhoneAndroid /> Mobile number</span>
                     <input
                         value={mobile}
                         onChange={(event) => setMobile(event.target.value)}
@@ -76,7 +78,7 @@ export default function LoginPage() {
 
                 {otpRequested && (
                     <label className="field-label">
-                        OTP code
+                        <span className="icon-label"><MdSms /> OTP code</span>
                         <input
                             value={otp}
                             onChange={(event) => setOtp(event.target.value)}
@@ -97,7 +99,7 @@ export default function LoginPage() {
                 <button className="button secondary" type="button" onClick={() => navigate('/role')}>
                     Change role
                 </button>
-            </section>
+            </motion.section>
         </main>
     );
 }

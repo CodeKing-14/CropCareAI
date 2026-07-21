@@ -1,3 +1,4 @@
+import torch
 from faster_whisper import WhisperModel
 
 # Options: tiny, base, small, medium, large-v3
@@ -10,15 +11,16 @@ def get_model():
     """Lazily load and return the WhisperModel instance."""
     global _model
     if _model is None:
+        device = "cuda" if torch.cuda.is_available() else "cpu"
         _model = WhisperModel(
             MODEL_SIZE,
-            device="cpu",  # Change to "cuda" if using NVIDIA GPU
-            compute_type="int8",
+            device=device,
+            compute_type="float16" if device == "cuda" else "int8",
         )
     return _model
 
 
-def transcribe_audio(audio_path: str):
+def transcribe_audio(audio_path: str, language: str | None = None):
     """Transcribe an audio file using Faster-Whisper."""
 
     model = get_model()
@@ -26,7 +28,7 @@ def transcribe_audio(audio_path: str):
         audio_path,
         beam_size=5,
         multilingual=True,
-        language=None,
+        language=language,
         task="transcribe",
     )
 

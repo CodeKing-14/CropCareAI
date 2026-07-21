@@ -1,17 +1,23 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { FaImage, FaMicrophone, FaPaperPlane, FaStop } from 'react-icons/fa';
 import { getLanguage, getRole, isAuthenticated, logout } from '../utils/appState';
-import { predictImage, transcribeAudio } from '../services/api';
+import { predictImage, sendChatMessage, transcribeAudio } from '../services/api';
 import './Page.css';
 
 export default function ChatPage() {
     const navigate = useNavigate();
+    const mediaRecorderRef = useRef(null);
+    const recordedChunksRef = useRef([]);
     const [imageFile, setImageFile] = useState(null);
-    const [audioFile, setAudioFile] = useState(null);
     const [prediction, setPrediction] = useState(null);
-    const [transcription, setTranscription] = useState(null);
+    const [chatInput, setChatInput] = useState('');
+    const [messages, setMessages] = useState([]);
+    const [recording, setRecording] = useState(false);
     const [loadingPrediction, setLoadingPrediction] = useState(false);
     const [loadingAudio, setLoadingAudio] = useState(false);
+    const [loadingChat, setLoadingChat] = useState(false);
     const [error, setError] = useState('');
 
     const language = getLanguage();
@@ -23,20 +29,20 @@ export default function ChatPage() {
         }
     }, [navigate, role]);
 
-    const handleImageSubmit = async (event) => {
-        event.preventDefault();
-        if (!imageFile) {
-            setError('Please choose an image first.');
-            return;
-        }
-
+    const handleImageFile = async (file) => {
+        if (!file) return;
+        setImageFile(file);
         setLoadingPrediction(true);
         setError('');
         setPrediction(null);
 
         try {
-            const data = await predictImage(imageFile);
+            const data = await predictImage(file);
             setPrediction(data);
+            setMessages((items) => [
+                ...items,
+                { sender: 'system', text: `Prediction: ${data.disease} (${Number(data.confidence).toFixed(1)}% confidence)` },
+            ]);
         } catch (err) {
             setError(err?.response?.data?.detail || err.message || 'Prediction failed.');
         } finally {
@@ -44,24 +50,90 @@ export default function ChatPage() {
         }
     };
 
-    const handleAudioSubmit = async (event) => {
+    const handleDrop = (event) => {
         event.preventDefault();
-        if (!audioFile) {
-            setError('Please choose an audio file first.');
+        handleImageFile(event.dataTransfer.files?.[0]);
+    };
+
+    const handleRecord = async () => {
+        if (recording) {
+            mediaRecorderRef.current?.stop();
             return;
         }
 
-        setLoadingAudio(true);
-        setError('');
-        setTranscription(null);
+        if (!navigator.mediaDevices?.getUserMedia) {
+            setError('Voice recording is not supported in this browser.');
+            return;
+        }
 
         try {
-            const data = await transcribeAudio(audioFile);
-            setTranscription(data);
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const recorder = new MediaRecorder(stream);
+            recordedChunksRef.current = [];
+
+            recorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    recordedChunksRef.current.push(event.data);
+                }
+            };
+
+            recorder.onstop = async () => {
+                stream.getTracks().forEach((track) => track.stop());
+                setRecording(false);
+                const blob = new Blob(recordedChunksRef.current, { type: 'audio/webm' });
+                const file = new File([blob], 'voice-report.webm', { type: 'audio/webm' });
+                await handleAudioFile(file);
+            };
+
+            mediaRecorderRef.current = recorder;
+            recorder.start();
+            setRecording(true);
+        } catch (err) {
+            setError(err.message || 'Could not start voice recording.');
+        }
+    };
+
+    const handleAudioFile = async (file) => {
+        if (!file) return;
+        setLoadingAudio(true);
+        setError('');
+
+        try {
+            const data = await transcribeAudio(file, language);
+            setChatInput(data.text);
+            setMessages((items) => [...items, { sender: 'system', text: `Voice text: ${data.text}` }]);
         } catch (err) {
             setError(err?.response?.data?.detail || err.message || 'Transcription failed.');
         } finally {
             setLoadingAudio(false);
+        }
+    };
+
+    const handleSend = async (event) => {
+        event.preventDefault();
+        const text = chatInput.trim();
+        if (!text && !prediction) {
+            setError('Enter a message, record voice, or upload a plant image first.');
+            return;
+        }
+
+        setLoadingChat(true);
+        setError('');
+        setMessages((items) => [...items, { sender: 'farmer', text: text || 'Please advise based on the uploaded image.' }]);
+        setChatInput('');
+
+        try {
+            const data = await sendChatMessage({
+                message: text,
+                disease: prediction?.disease,
+                confidence: prediction?.confidence,
+                language,
+            });
+            setMessages((items) => [...items, { sender: 'ai', text: data.ai_response, details: data }]);
+        } catch (err) {
+            setError(err?.response?.data?.detail || err.message || 'Chat request failed.');
+        } finally {
+            setLoadingChat(false);
         }
     };
 
@@ -72,67 +144,70 @@ export default function ChatPage() {
 
     return (
         <main className="page shell">
-            <section className="card">
+            <motion.section className="card" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }}>
                 <div className="card-header">
                     <div>
                         <p className="eyebrow">Farmer dashboard</p>
-                        <h1>Crop prediction and voice report</h1>
+                        <h1>AI crop chat</h1>
                         <p className="subtitle">Language: {language}</p>
                     </div>
                     <div className="action-group">
-                        <button className="button secondary" type="button" onClick={() => navigate('/report')}>
-                            Reports
-                        </button>
-                        <button className="button secondary" type="button" onClick={handleLogout}>
-                            Logout
-                        </button>
+                        <button className="button secondary" type="button" onClick={() => navigate('/report')}>Reports</button>
+                        <button className="button secondary" type="button" onClick={handleLogout}>Logout</button>
                     </div>
                 </div>
 
-                <form className="form-stack" onSubmit={handleImageSubmit}>
-                    <label className="field-label">
-                        Upload crop image
-                        <input type="file" accept="image/*" onChange={(event) => setImageFile(event.target.files?.[0] || null)} />
-                    </label>
-                    <button className="button primary" type="submit" disabled={loadingPrediction}>
-                        {loadingPrediction ? 'Predicting…' : 'Predict disease'}
-                    </button>
-                </form>
-
-                <form className="form-stack" onSubmit={handleAudioSubmit}>
-                    <label className="field-label">
-                        Upload voice report
-                        <input type="file" accept="audio/*" onChange={(event) => setAudioFile(event.target.files?.[0] || null)} />
-                    </label>
-                    <button className="button primary" type="submit" disabled={loadingAudio}>
-                        {loadingAudio ? 'Transcribing…' : 'Transcribe voice'}
-                    </button>
-                </form>
+                <div
+                    className="drop-zone"
+                    onDragOver={(event) => event.preventDefault()}
+                    onDrop={handleDrop}
+                >
+                    <FaImage className="drop-icon" />
+                    <strong>{imageFile ? imageFile.name : 'Drop plant image here'}</strong>
+                    <span>or choose an image from your device</span>
+                    <input type="file" accept="image/*" onChange={(event) => handleImageFile(event.target.files?.[0])} />
+                    {loadingPrediction && <p>Predicting disease...</p>}
+                </div>
 
                 {prediction && (
                     <div className="result-card">
                         <h2>Prediction result</h2>
-                        <p>
-                            <strong>Disease:</strong> {prediction.disease}
-                        </p>
-                        <p>
-                            <strong>Confidence:</strong> {(prediction.confidence * 100).toFixed(1)}%
-                        </p>
+                        <p><strong>Disease:</strong> {prediction.disease}</p>
+                        <p><strong>Confidence:</strong> {Number(prediction.confidence).toFixed(1)}%</p>
                     </div>
                 )}
 
-                {transcription && (
-                    <div className="result-card">
-                        <h2>Transcription result</h2>
-                        <p>{transcription.text}</p>
-                        <p>
-                            <strong>Detected language:</strong> {transcription.language}
-                        </p>
-                    </div>
-                )}
+                <div className="chat-window">
+                    {messages.map((message, index) => (
+                        <article className={`chat-bubble ${message.sender}`} key={`${message.sender}-${index}`}>
+                            <p>{message.text}</p>
+                            {message.details && (
+                                <div className="advice-grid">
+                                    <p><strong>Medicine:</strong> {message.details.medicine_recommendation}</p>
+                                    <p><strong>Treatment:</strong> {message.details.treatment_steps.join(' ')}</p>
+                                    <p><strong>Precautions:</strong> {message.details.precautions.join(' ')}</p>
+                                </div>
+                            )}
+                        </article>
+                    ))}
+                </div>
+
+                <form className="chat-form" onSubmit={handleSend}>
+                    <button className="icon-button" type="button" onClick={handleRecord} disabled={loadingAudio} title="Record voice">
+                        {recording ? <FaStop /> : <FaMicrophone />}
+                    </button>
+                    <input
+                        value={chatInput}
+                        onChange={(event) => setChatInput(event.target.value)}
+                        placeholder={loadingAudio ? 'Transcribing voice...' : 'Type crop question or use voice'}
+                    />
+                    <button className="icon-button primary-icon" type="submit" disabled={loadingChat} title="Send message">
+                        <FaPaperPlane />
+                    </button>
+                </form>
 
                 {error && <div className="notice error">{error}</div>}
-            </section>
+            </motion.section>
         </main>
     );
 }

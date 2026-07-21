@@ -27,6 +27,7 @@ class ErrorResponse(BaseModel):
 class OTPRequest(BaseModel):
     mobile_number: str = Field(..., description="Mobile number for OTP login")
     role: Literal["farmer", "expert"] = Field(..., description="User role for login")
+    preferred_language: str = Field("English", description="Preferred app language")
 
 
 class OTPVerify(BaseModel):
@@ -39,3 +40,18 @@ class AuthResponse(BaseModel):
     success: bool
     message: str
     otp_code: Optional[str] = None
+
+
+class ChatRequest(BaseModel):
+    message: str = Field(..., description="User message for crop care advice")
+    disease: Optional[str] = Field(None, description="Predicted disease name, when available")
+    confidence: Optional[float] = Field(None, description="Prediction confidence, when available")
+    language: str = Field("English", description="Preferred response language")
+
+
+class ChatResponse(BaseModel):
+    success: bool
+    ai_response: str
+    medicine_recommendation: str
+    treatment_steps: list[str]
+    precautions: list[str]
