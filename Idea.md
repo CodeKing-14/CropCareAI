@@ -1,325 +1,217 @@
-# CROPCARE AI DEVELOPMENT INSTRUCTIONS
+You are a Senior Full Stack Developer specializing in React.js, FastAPI, PostgreSQL, Machine Learning, and system architecture.
 
-## General Instructions
+I already have a working CropCare AI project. DO NOT modify, refactor, rename, or remove any existing functionality. Preserve all current UI, APIs, database models, business logic, and project structure.
 
-* Work step by step. Do not skip any task.
-* Before implementing a feature, inspect the existing codebase to determine whether it already exists.
-* Reuse existing code whenever possible instead of rewriting working components.
-* Keep the code simple, clean, readable, maintainable, and production-ready.
-* Do not modify existing working functionality unless required.
-* If a required dependency is missing, install and configure it.
-* After each completed feature, verify the relevant functionality by running the application or available tests. If verification cannot be performed, clearly state what remains unverified.
-* Maintain consistent coding standards throughout the project.
+Your task is to ADD new features only. The existing code must continue to work exactly as before.
 
----
+========================
+PROJECT STACK
+========================
 
-# FRONTEND DEVELOPMENT (React.js)
+Frontend:
+- React.js
+- React Router
+- Tailwind CSS
+- Axios
 
-Create a modern, responsive, and farmer-friendly **React.js web application**.
+Backend:
+- FastAPI
 
-Use:
+Database:
+- PostgreSQL
 
-* React.js
-* React Router
-* Axios
-* Tailwind CSS
-* Framer Motion (for animations)
-* React Icons
+AI:
+- PyTorch CNN model (.pth)
 
-The application should contain six pages.
+Current workflow:
+1. Farmer uploads crop image.
+2. Deep learning model predicts plant disease.
+3. Prediction, image, and farmer details are sent to agricultural expert.
+4. Expert replies with treatment.
+5. Farmer receives expert response.
 
-## 1. Splash Screen
+Do NOT change this workflow.
 
-* Display CropCare AI branding.
-* Use an agriculture-themed illustration.
-* Show for 3–4 seconds.
-* Automatically navigate to the Language Selection page.
-* Include smooth fade and scale animations.
+========================
+FEATURE 1
+Nearby Expert Assignment
+========================
 
----
-
-## 2. Language Selection
-
-Supported languages:
-
-* English
-* Tamil
-* Hindi
-* Telugu
-* Malayalam
-* Marathi
+Add automatic expert assignment.
 
 Requirements:
 
-* Allow the user to select only one language.
-* Store the selected language.
-* Automatically navigate to the Role Selection page.
+- Store latitude and longitude for every agricultural expert.
+- Store farmer GPS location.
+- Use Haversine distance formula.
+- Automatically assign the nearest available expert.
+- If the nearest expert is unavailable, assign the next nearest.
+- If no expert is available, place the request in a pending queue.
 
----
+Backend:
+- Create new APIs only.
+- Do not modify existing APIs.
 
-## 3. Role Selection
+Frontend:
+- Show:
+    Assigned Expert
+    Distance
+    Assignment Status
 
-Allow the user to choose one role:
+Do not modify existing pages.
+Create new reusable React components if required.
 
-* Farmer
-* Agriculture Expert
+========================
+FEATURE 2
+Offline AI Prediction
+========================
 
-Store the selected role and navigate to the Login page.
+The AI disease prediction must work without internet.
 
----
+Requirements:
 
-## 4. Login Page
+- Store the trained PyTorch model locally.
+- Detect network availability.
+- If internet exists:
+      Run normal workflow.
+- If offline:
+      Run local AI prediction.
+      Save request locally.
+      Automatically upload request when internet returns.
 
-Both Farmer and Agriculture Expert should use the same login interface.
+Requirements:
 
-Features:
+- Queue unsent requests.
+- Retry automatically.
+- Show:
+    Offline Prediction
+    Pending Sync
+    Synced Successfully
 
-* Mobile number input
-* Generate OTP
-* Verify OTP
-* Login using OTP
+Do NOT remove the online prediction.
 
-Store Farmer and Agriculture Expert details in separate backend tables.
+========================
+FEATURE 3
+Emergency Crop Alert
+========================
 
-Design the page to be clean, responsive, and easy to use for first-time users.
+Some diseases are dangerous.
 
----
+Create a configurable list like:
 
-## 5. AI Chat Page
+Emergency Diseases:
+- Late Blight
+- Bacterial Wilt
+- Rice Blast
+- Citrus Canker
+- Tomato Yellow Leaf Curl Virus
 
-Features:
+When AI predicts one of these:
 
-* Chat interface
-* Upload plant image
-* Drag-and-drop image upload
-* Voice recording button
-* Speech-to-text integration
-* Send message
-* Display disease prediction
-* Display confidence score
-* Display AI response
-* Display medicine recommendation
-* Display treatment steps
-* Display precautions
+- Create Emergency Alert.
+- Mark Priority = HIGH.
+- Notify assigned expert immediately.
+- Move request to the top of the expert dashboard.
+- Show a red Emergency badge.
+- Record emergency timestamp.
 
-The UI should remain simple and easy to understand.
+Do not hardcode.
+Store emergency diseases in configuration.
 
----
+========================
+DATABASE
+========================
 
-## 6. Agriculture Expert Chat
+Create new tables only.
 
-Allow communication between Farmers and Agriculture Experts.
+Suggested tables:
 
-Features:
+Experts
 
-* Text messaging
-* Image sharing
-* Voice recording
-* Simple conversation layout
+ExpertAvailability
 
----
+EmergencyAlerts
 
-## UI Requirements
+OfflineQueue
 
-* Modern responsive design
-* Tailwind CSS
-* Material-inspired cards
-* Rounded corners
-* Soft shadows
-* Smooth page transitions
-* Framer Motion animations
-* Responsive on desktop, tablet, and mobile browsers
-* Large buttons and clear typography
-* Farmer-friendly interface
+AssignmentHistory
 
----
+Do not change existing tables.
 
-# BACKEND DEVELOPMENT
+========================
+BACKEND
+========================
 
-Do not remove or rewrite existing working functionality.
+Create new routers.
 
-Extend the backend only where required.
+Do not edit existing routes.
 
-## Faster-Whisper
+Create:
 
-Configure Faster-Whisper correctly.
+assignment_router.py
 
-Verify:
+offline_router.py
 
-* Audio upload
-* Audio transcription
-* Supported audio formats
-* Language detection
-* Returned text
+emergency_router.py
 
-If GPU is available, use GPU.
+Create new services if needed.
 
-Otherwise use CPU.
+========================
+FRONTEND
+========================
 
----
+Do not modify existing pages.
 
-## Database
+Only add:
 
-Create two tables:
+- Expert Assignment Card
+- Emergency Badge
+- Offline Sync Status
+- Pending Upload Screen
 
-Farmer
+If necessary, create:
 
-AgricultureExpert
+- New React components
+- Custom React hooks
+- Utility functions
+- API service files
 
-Store:
+Reuse the existing design, styling, routing, and architecture.
 
-* Mobile Number
-* OTP verification status
-* Login timestamp
-* Preferred language
-* Role
+========================
+CODING RULES
+========================
 
-Do not modify existing prediction tables.
+- Never modify existing code.
+- Never rename files.
+- Never remove APIs.
+- Never change existing UI.
+- Never change navigation.
+- Never break compatibility.
+- Only ADD new code.
+- If existing code is required, extend it using wrappers, new services, custom hooks, or reusable React components.
 
----
+========================
+OUTPUT
+========================
 
-## Prediction
+For every new feature provide:
 
-Verify that:
+1. Folder structure
+2. New files
+3. Code for each new file
+4. API endpoints
+5. Database schema
+6. SQL migration
+7. Frontend integration steps
+8. Backend integration steps
+9. Testing instructions
 
-* Uploaded image reaches the backend.
-* CNN model loads successfully.
-* Prediction executes correctly.
-* Disease name is returned.
-* Confidence score is returned.
+If any existing file requires a single import or registration, explicitly mention the exact line to add and nothing else.
 
----
+Do not rewrite the project.
+Do not refactor.
+Do not optimize existing code.
+Do not delete anything.
 
-## Speech-to-Text
-
-Verify:
-
-* Audio upload endpoint.
-* Faster-Whisper transcription.
-* Transcribed text is returned to the frontend.
-* The recognized text automatically appears inside the chat input.
-
-Support:
-
-* English
-* Tamil
-* Hindi
-* Telugu
-* Malayalam
-* Marathi
-
-If automatic language detection is insufficient, allow the frontend to specify the expected language.
-
----
-
-# APPLICATION FLOW
-
-Farmer Login
-
-↓
-
-AI Chat Page
-
-↓
-
-Upload Plant Image
-
-↓
-
-CNN Disease Detection
-
-↓
-
-Return Disease + Confidence
-
-↓
-
-Send Disease and User Query to RAG (future integration)
-
-↓
-
-Generate Recommendation
-
-↓
-
-Display Medicine
-
-↓
-
-Display Precautions
-
-↓
-
-Display Recovery Advice
-
----
-
-Voice Flow
-
-User clicks the microphone button
-
-↓
-
-Record Audio
-
-↓
-
-Upload Audio
-
-↓
-
-Faster-Whisper
-
-↓
-
-Speech-to-Text
-
-↓
-
-Populate Chat Input
-
-↓
-
-Send to RAG
-
-↓
-
-Display AI Response
-
----
-
-# FRONTEND + BACKEND INTEGRATION
-
-Connect every React.js page with the corresponding FastAPI endpoint.
-
-Verify API connectivity for:
-
-* Login
-* OTP
-* Prediction
-* Speech-to-text
-* Chat
-* Prediction History
-
-Implement loading indicators, proper error handling, and responsive user feedback.
-
----
-
-# FINAL REVIEW
-
-Review the complete application.
-
-For every feature:
-
-* Confirm whether it is implemented.
-* Confirm whether it has been verified.
-* If verification cannot be performed, explain why and provide the exact manual verification steps.
-
-Finally, generate a checklist containing:
-
-* Completed features
-* Pending features
-* Verified features
-* Unverified features
-* Known issues
-* Recommended future improvements
+Treat the existing project as production software that must remain fully functional.

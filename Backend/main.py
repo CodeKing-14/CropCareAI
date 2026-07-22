@@ -16,6 +16,10 @@ from routers.chat import router as chat_router
 from routers.expert_chat import router as expert_chat_router
 from routers.prediction import router as prediction_router
 from routers.speech import router as speech_router
+# New feature routers — added without modifying any existing router
+from routers.assignment_router import router as assignment_router
+from routers.offline_router import router as offline_router
+from routers.emergency_router import router as emergency_router
 
 load_dotenv()
 
@@ -59,6 +63,10 @@ app.include_router(speech_router)
 app.include_router(auth_router)
 app.include_router(chat_router)
 app.include_router(expert_chat_router)
+# New feature routers
+app.include_router(assignment_router)
+app.include_router(offline_router)
+app.include_router(emergency_router)
 
 
 @app.get("/", tags=["health"])

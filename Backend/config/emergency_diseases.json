@@ -1,0 +1,15 @@
+{
+  "emergency_diseases": [
+    "Late Blight",
+    "Bacterial Wilt",
+    "Rice Blast",
+    "Citrus Canker",
+    "Tomato Yellow Leaf Curl Virus",
+    "Fusarium Wilt",
+    "Downy Mildew",
+    "Black Rot",
+    "Fire Blight",
+    "Panama Disease"
+  ],
+  "description": "Diseases in this list trigger an EmergencyAlert with priority=HIGH when detected by the CNN model. Edit this file to add or remove diseases — no code changes required."
+}

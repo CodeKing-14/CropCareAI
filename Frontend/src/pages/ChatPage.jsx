@@ -2,8 +2,16 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FaImage, FaMicrophone, FaPaperPlane, FaStop, FaUserMd } from 'react-icons/fa';
-import { getLanguage, getRole, isAuthenticated, logout } from '../utils/appState';
+import { getLanguage, getRole, getMobile, isAuthenticated, logout } from '../utils/appState';
 import { predictImage, sendChatMessage, transcribeAudio } from '../services/api';
+
+// New Feature Imports
+import ExpertAssignmentCard from '../components/ExpertAssignmentCard';
+import OfflineSyncStatus from '../components/OfflineSyncStatus';
+import PendingUploadScreen from '../components/PendingUploadScreen';
+import EmergencyBadge from '../components/EmergencyBadge';
+import { useOfflineSync, fileToBase64 } from '../hooks/useOfflineSync';
+import { useEmergencyCheck } from '../hooks/useEmergencyCheck';
 import { t } from '../utils/i18n';
 import './Page.css';
 
@@ -26,6 +34,11 @@ export default function ChatPage() {
 
     const language = getLanguage();
     const role = getRole();
+    const mobile = getMobile();
+
+    // Feature Hooks
+    const { isOnline, isSyncing, pendingCount, enqueuePrediction, syncQueue } = useOfflineSync(mobile);
+    const { emergencyStatus, verifyEmergency, clearEmergency } = useEmergencyCheck(mobile);
 
     useEffect(() => {
         if (!isAuthenticated() || role !== 'farmer') {
@@ -51,17 +64,29 @@ export default function ChatPage() {
         setLoadingPrediction(true);
         setError('');
         setPrediction(null);
+        clearEmergency();
 
         try {
-            const data = await predictImage(file);
-            setPrediction(data);
-            setMessages((items) => [
-                ...items,
-                {
-                    sender: 'system',
-                    text: `${t('predictionResult')}: ${data.disease} (${Number(data.confidence).toFixed(1)}% ${t('confidenceLabel')})`,
-                },
-            ]);
+            if (!isOnline) {
+                const b64 = await fileToBase64(file);
+                enqueuePrediction(file.name, b64);
+                setPrediction({ disease: 'Offline Prediction', confidence: 100 });
+                setMessages((items) => [
+                    ...items,
+                    { sender: 'system', text: `Saved for offline sync: ${file.name}` },
+                ]);
+            } else {
+                const data = await predictImage(file);
+                setPrediction(data);
+                verifyEmergency(data.disease, data.confidence);
+                setMessages((items) => [
+                    ...items,
+                    {
+                        sender: 'system',
+                        text: `${t('predictionResult')}: ${data.disease} (${Number(data.confidence).toFixed(1)}% ${t('confidenceLabel')})`,
+                    },
+                ]);
+            }
         } catch (err) {
             setError(err?.response?.data?.detail || err.message || t('failedPrediction'));
         } finally {
@@ -189,6 +214,9 @@ export default function ChatPage() {
                     </div>
                 </div>
 
+                <OfflineSyncStatus farmerMobile={mobile} />
+                <ExpertAssignmentCard farmerMobile={mobile} disease={prediction?.disease} />
+
                 <div
                     className={`drop-zone ${dragActive ? 'drag-active' : ''}`}
                     onDragOver={(event) => { event.preventDefault(); setDragActive(true); }}
@@ -210,6 +238,7 @@ export default function ChatPage() {
                         animate={{ opacity: 1, y: 0 }}
                     >
                         <h2>{t('predictionResult')}</h2>
+                        <EmergencyBadge emergencyStatus={emergencyStatus} />
                         <p><strong>{t('disease')}:</strong> {prediction.disease}</p>
                         <p><strong>{t('confidence')}:</strong> {Number(prediction.confidence).toFixed(1)}%</p>
                         <div className="confidence-bar">
@@ -265,29 +294,9 @@ export default function ChatPage() {
                     <div ref={chatEndRef} />
                 </div>
 
-                <form className="chat-form" onSubmit={handleSend}>
-                    <button
-                        className={`icon-button ${recording ? 'recording' : ''}`}
-                        type="button"
-                        onClick={handleRecord}
-                        disabled={loadingAudio}
-                        title={recording ? t('stopRecording') : t('recordVoice')}
-                    >
-                        {recording ? <FaStop /> : <FaMicrophone />}
-                    </button>
-                    <input
-                        value={chatInput}
-                        onChange={(event) => setChatInput(event.target.value)}
-                        placeholder={loadingAudio ? t('transcribingVoice') : recording ? t('recording') : t('typeQuestion')}
-                        disabled={loadingAudio}
-                    />
-                    <button className="icon-button primary-icon" type="submit" disabled={loadingChat} title={t('sendMessage')}>
-                        <FaPaperPlane />
-                    </button>
-                </form>
-
                 {error && <div className="notice error">{error}</div>}
             </motion.section>
+            <PendingUploadScreen pendingCount={pendingCount} isSyncing={isSyncing} onSync={syncQueue} />
         </main>
     );
 }

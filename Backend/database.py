@@ -168,6 +168,8 @@ def init_db() -> None:
     engine = create_engine(database_url, pool_pre_ping=True)
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+    # Import new feature models so Base.metadata includes their tables.
+    import features.models  # noqa: F401 — registers ExpertLocation, AssignmentHistory, etc.
     Base.metadata.create_all(bind=engine)
     _ensure_auth_columns()
 
