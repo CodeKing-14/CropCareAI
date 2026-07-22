@@ -49,12 +49,16 @@ def request_otp(data: OTPRequest, db: Session = Depends(get_db)) -> AuthResponse
             otp_expires_at=otp_expires_at,
             last_login_at=None,
         )
+        if data.role == "expert" and data.specialty:
+            user.specialty = data.specialty
         db.add(user)
     else:
         user.preferred_language = data.preferred_language
         user.otp_verified = False
         user.otp_code = otp_code
         user.otp_expires_at = otp_expires_at
+        if data.role == "expert" and data.specialty:
+            user.specialty = data.specialty
     db.commit()
     db.refresh(user)
 

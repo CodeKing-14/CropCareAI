@@ -29,6 +29,7 @@ export default function ExpertChatPage() {
 
     const [messages, setMessages] = useState([]);
     const [chatInput, setChatInput] = useState('');
+    const [selectedFarmer, setSelectedFarmer] = useState(null);
     const [recording, setRecording] = useState(false);
     const [loading, setLoading] = useState(true);
     const [sending, setSending] = useState(false);
@@ -77,6 +78,7 @@ export default function ExpertChatPage() {
             const message = await sendExpertMessage({
                 sender_role: role,
                 sender_mobile: mobile,
+                recipient_mobile: role === 'expert' ? selectedFarmer : null,
                 content: text,
             });
             setMessages((items) => [...items, message]);
@@ -217,6 +219,22 @@ export default function ExpertChatPage() {
 
                 <p className="subtitle">{t('readyExpert')}</p>
 
+                {role === 'expert' && (
+                    <div style={{ marginBottom: '16px', display: 'flex', gap: '8px', overflowX: 'auto' }}>
+                        {[...new Set(messages.map(m => m.sender_role === 'farmer' ? m.sender_mobile : m.recipient_mobile).filter(Boolean))].map(farmerMobile => (
+                            <button 
+                                key={farmerMobile}
+                                className={`button ${selectedFarmer === farmerMobile ? 'primary' : 'secondary'}`}
+                                onClick={() => setSelectedFarmer(farmerMobile)}
+                                type="button"
+                                style={{ padding: '6px 12px', borderRadius: '16px' }}
+                            >
+                                Farmer: {farmerMobile}
+                            </button>
+                        ))}
+                    </div>
+                )}
+
                 <div className="chat-window">
                     {loading && messages.length === 0 && (
                         <div className="loading-spinner">{t('loadingMessages')}</div>
@@ -227,7 +245,9 @@ export default function ExpertChatPage() {
                             <p>{t('noMessages')}</p>
                         </div>
                     )}
-                    {messages.map((message) => (
+                    {messages
+                        .filter(m => role === 'farmer' || !selectedFarmer || m.sender_mobile === selectedFarmer || m.recipient_mobile === selectedFarmer)
+                        .map((message) => (
                         <article
                             className={`chat-bubble ${message.sender_role === role ? 'user' : message.sender_role}`}
                             key={message.id}
@@ -276,7 +296,12 @@ export default function ExpertChatPage() {
                         placeholder={loadingAudio ? t('transcribingVoice') : t('expertPlaceholder')}
                         disabled={loadingAudio}
                     />
-                    <button className="icon-button primary-icon" type="submit" disabled={sending || !chatInput.trim()} title={t('sendMessage')}>
+                    <button 
+                        className="icon-button primary-icon" 
+                        type="submit" 
+                        disabled={sending || !chatInput.trim() || (role === 'expert' && !selectedFarmer)} 
+                        title={t('sendMessage')}
+                    >
                         <FaPaperPlane />
                     </button>
                 </form>

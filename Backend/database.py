@@ -86,6 +86,7 @@ class AgricultureExpert(Base):
     otp_verified = Column(Boolean, default=False, nullable=False)
     otp_code = Column(String(16), nullable=True)
     otp_expires_at = Column(DateTime, nullable=True)
+    specialty = Column(String(50), nullable=True)
     last_login_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
@@ -97,6 +98,7 @@ class ExpertMessage(Base):
     id = Column(Integer, primary_key=True, index=True)
     sender_role = Column(String(20), nullable=False)
     sender_mobile = Column(String(20), nullable=False)
+    recipient_mobile = Column(String(20), nullable=True)
     message_type = Column(String(20), default="text", nullable=False)
     content = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
@@ -144,6 +146,8 @@ def _ensure_auth_columns() -> None:
         "ALTER TABLE agriculture_experts ADD COLUMN IF NOT EXISTS role VARCHAR(20) NOT NULL DEFAULT 'expert'",
         "ALTER TABLE agriculture_experts ADD COLUMN IF NOT EXISTS preferred_language VARCHAR(40) NOT NULL DEFAULT 'English'",
         "ALTER TABLE agriculture_experts ADD COLUMN IF NOT EXISTS otp_verified BOOLEAN NOT NULL DEFAULT FALSE",
+        "ALTER TABLE agriculture_experts ADD COLUMN IF NOT EXISTS specialty VARCHAR(50)",
+        "ALTER TABLE expert_messages ADD COLUMN IF NOT EXISTS recipient_mobile VARCHAR(20)",
     ]
     with engine.begin() as connection:
         for statement in statements:
@@ -173,7 +177,42 @@ def init_db() -> None:
     Base.metadata.create_all(bind=engine)
     _ensure_auth_columns()
 
+    # Seed dummy experts
+    _seed_dummy_experts()
+
     logger.info("Database initialised successfully")
+
+
+def _seed_dummy_experts() -> None:
+    from features.models import ExpertLocation
+    dummy_experts = [
+        {"mobile": "9999999901", "specialty": "Tomato", "lat": 12.9716, "lon": 77.5946},
+        {"mobile": "9999999902", "specialty": "Potato", "lat": 12.9816, "lon": 77.6046},
+        {"mobile": "9999999903", "specialty": "Apple", "lat": 12.9616, "lon": 77.5846},
+    ]
+    with SessionLocal() as db:
+        for ex in dummy_experts:
+            expert = db.query(AgricultureExpert).filter_by(mobile_number=ex["mobile"]).first()
+            if not expert:
+                expert = AgricultureExpert(
+                    mobile_number=ex["mobile"],
+                    role="expert",
+                    specialty=ex["specialty"],
+                    otp_verified=True
+                )
+                db.add(expert)
+            
+            loc = db.query(ExpertLocation).filter_by(mobile_number=ex["mobile"]).first()
+            if not loc:
+                loc = ExpertLocation(
+                    mobile_number=ex["mobile"],
+                    latitude=ex["lat"],
+                    longitude=ex["lon"],
+                    is_available=True
+                )
+                db.add(loc)
+        
+        db.commit()
 
 
 # ---------------------------------------------------------------------------

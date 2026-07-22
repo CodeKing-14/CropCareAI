@@ -55,10 +55,11 @@ def assign_nearest_expert(
       assignment_id
       message
     """
+    from database import AgricultureExpert
     # Fetch all available experts that have a registered location.
-    available = db.query(ExpertLocation).filter(ExpertLocation.is_available == True).all()
+    available_locs = db.query(ExpertLocation).filter(ExpertLocation.is_available == True).all()
 
-    if not available:
+    if not available_locs:
         # No expert available — place farmer in pending queue.
         queued = PendingQueue(
             farmer_mobile=farmer_mobile,
@@ -76,12 +77,23 @@ def assign_nearest_expert(
             "queue_id": queued.id,
         }
 
-    # Rank by Haversine distance and pick the closest.
-    ranked = sorted(
-        available,
-        key=lambda e: haversine_km(farmer_lat, farmer_lon, e.latitude, e.longitude),
-    )
-    nearest = ranked[0]
+    experts_data = []
+    for loc in available_locs:
+        expert = db.query(AgricultureExpert).filter(AgricultureExpert.mobile_number == loc.mobile_number).first()
+        specialty = expert.specialty.lower() if expert and expert.specialty else ""
+        experts_data.append((loc, specialty))
+
+    def sort_key(item):
+        loc, specialty = item
+        dist = haversine_km(farmer_lat, farmer_lon, loc.latitude, loc.longitude)
+        is_match = 0
+        if disease and specialty and specialty in disease.lower():
+            is_match = 1
+        return (-is_match, dist)
+
+    # Rank by specialty match first, then by Haversine distance
+    ranked = sorted(experts_data, key=sort_key)
+    nearest, _ = ranked[0]
     distance = round(haversine_km(farmer_lat, farmer_lon, nearest.latitude, nearest.longitude), 2)
 
     record = AssignmentHistory(

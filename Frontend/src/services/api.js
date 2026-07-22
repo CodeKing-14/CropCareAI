@@ -13,12 +13,16 @@ export function getBackendUrl() {
     return BACKEND_URL;
 }
 
-export async function requestOtp(mobileNumber, role, preferredLanguage) {
-    const response = await api.post('/auth/request-otp', {
+export async function requestOtp(mobileNumber, role, preferredLanguage, specialty = null) {
+    const payload = {
         mobile_number: mobileNumber,
         role,
         preferred_language: preferredLanguage,
-    });
+    };
+    if (specialty) {
+        payload.specialty = specialty;
+    }
+    const response = await api.post('/auth/request-otp', payload);
     return response.data;
 }
 
@@ -93,6 +97,16 @@ export async function sendExpertVoice(senderRole, senderMobile, file, transcript
     }
     const response = await axios.post(`${BACKEND_URL}/expert-chat/messages/voice`, data, {
         headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+}
+
+export async function autoSendExpertResult(farmerMobile, expertMobile, disease, confidence) {
+    const response = await api.post('/expert-chat/auto-send', {
+        farmer_mobile: farmerMobile,
+        expert_mobile: expertMobile,
+        disease,
+        confidence,
     });
     return response.data;
 }

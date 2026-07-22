@@ -11,6 +11,7 @@ export default function LoginPage() {
     const navigate = useNavigate();
 
     const [mobile, setMobileInput] = useState('');
+    const [specialty, setSpecialty] = useState('');
     const [otp, setOtp] = useState('');
     const [status, setStatus] = useState('');
     const [error, setError] = useState('');
@@ -39,7 +40,7 @@ export default function LoginPage() {
         setDevOtp('');
 
         try {
-            const data = await requestOtp(mobile.trim(), role, language);
+            const data = await requestOtp(mobile.trim(), role, language, role === 'expert' ? specialty : null);
             setOtpRequested(true);
             if (data.otp_code) {
                 setDevOtp(data.otp_code);
@@ -98,12 +99,39 @@ export default function LoginPage() {
                         />
                     </label>
 
+                    {role === 'expert' && (
+                        <label className="field-label">
+                            <span className="icon-label"><MdSecurity /> Crop Specialty</span>
+                            <select
+                                value={specialty}
+                                onChange={(e) => setSpecialty(e.target.value)}
+                                disabled={otpRequested}
+                                style={{
+                                    width: '100%',
+                                    padding: '12px 14px',
+                                    borderRadius: '12px',
+                                    border: '1px solid #dde7dc',
+                                    fontSize: '1rem',
+                                    backgroundColor: '#fff',
+                                    marginTop: '6px'
+                                }}
+                            >
+                                <option value="">Select a specialty...</option>
+                                <option value="Tomato">Tomato</option>
+                                <option value="Potato">Potato</option>
+                                <option value="Apple">Apple</option>
+                                <option value="Wheat">Wheat</option>
+                                <option value="Corn">Corn</option>
+                            </select>
+                        </label>
+                    )}
+
                     {/* ── Request / Resend OTP button ── */}
                     <button
                         className="button primary"
                         type="button"
                         onClick={handleRequestOtp}
-                        disabled={loading || mobile.trim().length < 10}
+                        disabled={loading || mobile.trim().length < 10 || (role === 'expert' && !specialty)}
                     >
                         {loading && !otpRequested
                             ? t('sendingOtp')

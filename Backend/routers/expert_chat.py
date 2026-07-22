@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from database import ExpertMessage, get_db
 from schemas import ExpertMessageCreate, ExpertMessageItem
+from pydantic import BaseModel
 from utils import is_supported_image, save_uploaded_image
 
 logger = logging.getLogger("cropcare")
@@ -50,6 +51,7 @@ def send_message(data: ExpertMessageCreate, db: Session = Depends(get_db)) -> Ex
     message = ExpertMessage(
         sender_role=data.sender_role,
         sender_mobile=mobile,
+        recipient_mobile=data.recipient_mobile,
         message_type="text",
         content=content,
     )
@@ -64,6 +66,7 @@ async def send_image_message(
     sender_role: Annotated[str, Form(...)],
     sender_mobile: Annotated[str, Form(...)],
     image: Annotated[UploadFile, File(...)],
+    recipient_mobile: Annotated[str | None, Form()] = None,
     db: Session = Depends(get_db),
 ) -> ExpertMessageItem:
     if sender_role not in {"farmer", "expert"}:
@@ -91,6 +94,7 @@ async def send_image_message(
     message = ExpertMessage(
         sender_role=sender_role,
         sender_mobile=mobile,
+        recipient_mobile=recipient_mobile,
         message_type="image",
         content=image_path,
     )
@@ -106,6 +110,7 @@ async def send_voice_message(
     sender_mobile: Annotated[str, Form(...)],
     audio: Annotated[UploadFile, File(...)],
     transcription: Annotated[str | None, Form()] = None,
+    recipient_mobile: Annotated[str | None, Form()] = None,
     db: Session = Depends(get_db),
 ) -> ExpertMessageItem:
     if sender_role not in {"farmer", "expert"}:
@@ -136,7 +141,32 @@ async def send_voice_message(
     message = ExpertMessage(
         sender_role=sender_role,
         sender_mobile=mobile,
+        recipient_mobile=recipient_mobile,
         message_type="voice",
+        content=content,
+    )
+    db.add(message)
+    db.commit()
+    db.refresh(message)
+    return ExpertMessageItem.model_validate(message)
+
+
+class AutoSendRequest(BaseModel):
+    farmer_mobile: str
+    expert_mobile: str
+    disease: str
+    confidence: float
+
+@router.post("/auto-send", response_model=ExpertMessageItem, status_code=status.HTTP_201_CREATED)
+def auto_send_result(data: AutoSendRequest, db: Session = Depends(get_db)) -> ExpertMessageItem:
+    # Auto-send the result text as a farmer message to the expert
+    content = f"Farmer uploaded an image. CNN Result: {data.disease} ({data.confidence:.1f}% confidence)."
+    
+    message = ExpertMessage(
+        sender_role="farmer",
+        sender_mobile=data.farmer_mobile,
+        recipient_mobile=data.expert_mobile,
+        message_type="text",
         content=content,
     )
     db.add(message)

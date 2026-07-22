@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FaImage, FaMicrophone, FaPaperPlane, FaStop, FaUserMd } from 'react-icons/fa';
 import { getLanguage, getRole, getMobile, isAuthenticated, logout } from '../utils/appState';
-import { predictImage, sendChatMessage, transcribeAudio } from '../services/api';
+import { predictImage, sendChatMessage, transcribeAudio, autoSendExpertResult } from '../services/api';
+import { assignNearestExpert } from '../services/assignmentApi';
 
 // New Feature Imports
 import ExpertAssignmentCard from '../components/ExpertAssignmentCard';
@@ -86,6 +87,37 @@ export default function ChatPage() {
                         text: `${t('predictionResult')}: ${data.disease} (${Number(data.confidence).toFixed(1)}% ${t('confidenceLabel')})`,
                     },
                 ]);
+
+                try {
+                    const getPosition = () =>
+                        new Promise((resolve, reject) => {
+                            if (!navigator.geolocation) {
+                                reject(new Error('Geolocation is not supported by this browser.'));
+                            } else {
+                                navigator.geolocation.getCurrentPosition(resolve, reject, {
+                                    timeout: 8000,
+                                    enableHighAccuracy: false,
+                                });
+                            }
+                        });
+                    let lat = 0, lon = 0;
+                    try {
+                        const position = await getPosition();
+                        lat = position.coords.latitude;
+                        lon = position.coords.longitude;
+                    } catch (geoErr) {}
+
+                    const assignmentResult = await assignNearestExpert(mobile, lat, lon, data.disease);
+                    if (assignmentResult.status === 'assigned' && assignmentResult.expert_mobile) {
+                        await autoSendExpertResult(mobile, assignmentResult.expert_mobile, data.disease, data.confidence);
+                        setMessages((items) => [
+                            ...items,
+                            { sender: 'system', text: `Auto-sent prediction result to assigned expert: ${assignmentResult.expert_mobile}` },
+                        ]);
+                    }
+                } catch (assignErr) {
+                    console.error("Auto assignment failed", assignErr);
+                }
             }
         } catch (err) {
             setError(err?.response?.data?.detail || err.message || t('failedPrediction'));
